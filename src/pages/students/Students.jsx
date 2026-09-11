@@ -1,8 +1,9 @@
 
 import "./Student.css";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import studentService from "../../services/studentService";
 import {
     Plus,
     Search,
@@ -15,81 +16,10 @@ import {
     GraduationCap,
 } from "lucide-react";
 
-const STORAGE_KEY = "school_students";
-
-const DEFAULT_STUDENTS = [
-    {
-        id: "STU-001",
-        name: "Ali Khan",
-        email: "ali@example.com",
-        phone: "03001234567",
-        className: "10th",
-        section: "A",
-        gender: "Male",
-        dateOfBirth: "2009-05-12",
-        address: "Lahore, Pakistan",
-        guardianName: "Muhammad Khan",
-        guardianPhone: "03001112233",
-        status: "Active",
-    },
-    {
-        id: "STU-002",
-        name: "Sara Ahmed",
-        email: "sara@example.com",
-        phone: "03111234567",
-        className: "9th",
-        section: "B",
-        gender: "Female",
-        dateOfBirth: "2010-08-20",
-        address: "Lahore, Pakistan",
-        guardianName: "Ahmed Ali",
-        guardianPhone: "03112223344",
-        status: "Active",
-    },
-    {
-        id: "STU-003",
-        name: "Usman Raza",
-        email: "usman@example.com",
-        phone: "03221234567",
-        className: "8th",
-        section: "A",
-        gender: "Male",
-        dateOfBirth: "2011-03-15",
-        address: "Raiwind, Lahore",
-        guardianName: "Raza Ahmed",
-        guardianPhone: "03223334455",
-        status: "Inactive",
-    },
-];
-
-function getInitialStudents() {
-    try {
-        const savedStudents =
-            localStorage.getItem(STORAGE_KEY);
-
-        if (savedStudents) {
-            return JSON.parse(savedStudents);
-        }
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(DEFAULT_STUDENTS)
-        );
-
-        return DEFAULT_STUDENTS;
-    } catch (error) {
-        console.error(
-            "Failed to load students:",
-            error
-        );
-
-        return DEFAULT_STUDENTS;
-    }
-}
-
 function Student() {
-    const [students, setStudents] =
-        useState(getInitialStudents);
+    const [students, setStudents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
     const [search, setSearch] = useState("");
 
@@ -98,6 +28,22 @@ function Student() {
 
     const [statusFilter, setStatusFilter] =
         useState("All");
+
+    useEffect(() => {
+        const loadStudents = async () => {
+            try {
+                const response = await studentService.getAll();
+                setStudents(response.data);
+            } catch (error) {
+                console.error("Failed to load students:", error);
+                setLoadError("Unable to load students from the API.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadStudents();
+    }, []);
 
     // -----------------------------------------
     // Delete Student
@@ -120,17 +66,16 @@ function Student() {
             return;
         }
 
-        const updatedStudents =
-            students.filter(
-                (item) => item.id !== id
-            );
-
-        setStudents(updatedStudents);
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(updatedStudents)
-        );
+        studentService.delete(id)
+            .then(() => {
+                setStudents((previousStudents) =>
+                    previousStudents.filter((item) => item.id !== id)
+                );
+            })
+            .catch((error) => {
+                console.error("Failed to delete student:", error);
+                alert("Unable to delete student.");
+            });
     };
 
     // -----------------------------------------
@@ -175,6 +120,14 @@ function Student() {
         classFilter,
         statusFilter,
     ]);
+
+    if (isLoading) {
+        return <div className="student-page"><div className="empty-students"><h2>Loading Students...</h2></div></div>;
+    }
+
+    if (loadError) {
+        return <div className="student-page"><div className="empty-students"><h2>{loadError}</h2></div></div>;
+    }
 
     // -----------------------------------------
     // Statistics

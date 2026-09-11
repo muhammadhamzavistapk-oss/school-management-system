@@ -102,6 +102,35 @@ import ClassDetails from "./pages/classes/ClassDetails";
 import Staff from "./pages/staff/Staff";
 import StaffForm from "./pages/staff/StaffForm";
 import StaffDetails from "./pages/staff/StaffDetails";
+import ModulePage from "./pages/shared/ModulePage";
+
+const modulePages = [
+  ["/academic-years", "Academic Years", "Define the active academic sessions and school calendar.", "Create Academic Year"],
+  ["/sections", "Sections", "Organize classes into sections and manage their capacity.", "Add Section"],
+  ["/subjects", "Subjects", "Manage the subjects offered across your academic programs.", "Add Subject"],
+  ["/enrollments", "Enrollments", "Place students in the right classes and academic sessions.", "New Enrollment"],
+  ["/teacher-assignments", "Teacher Assignments", "Connect teachers with subjects, classes, and sections.", "Assign Teacher"],
+  ["/timetable", "Timetable", "Plan lessons and keep the school day running smoothly.", "Create Timetable"],
+  ["/student-attendance", "Student Attendance", "Record and review daily student attendance.", "Mark Attendance"],
+  ["/teacher-attendance", "Teacher Attendance", "Track staff attendance and availability.", "Mark Attendance"],
+  ["/exams", "Exams", "Schedule examinations and manage their assessment structure.", "Create Exam"],
+  ["/results", "Results", "Review academic performance and publish examination results.", "Add Result"],
+  ["/fees", "Fees", "Set up fee structures and monitor student fee obligations.", "Create Fee"],
+  ["/payments", "Payments", "Record payments and keep financial transactions organized.", "Record Payment"],
+  ["/fee-reports", "Fee Reports", "Review collections, outstanding balances, and fee trends.", "Export Report"],
+  ["/notices", "Notices", "Share important updates with students, staff, and families.", "Create Notice"],
+  ["/events", "Events", "Plan school events and keep the community informed.", "Add Event"],
+  ["/student-report", "Student Report", "Generate detailed reports for individual students.", "Generate Report"],
+  ["/attendance-report", "Attendance Report", "Analyze attendance patterns across the school.", "Generate Report"],
+  ["/fee-report", "Fee Report", "Analyze fee collection and outstanding payments.", "Generate Report"],
+  ["/result-report", "Result Report", "Compare results and understand academic performance.", "Generate Report"],
+  ["/settings", "School Settings", "Configure school identity, preferences, and administration.", "Save Changes"],
+];
+
+const moduleItems = (title) => [
+  { name: `${title} workspace`, detail: "Ready for your school data" },
+  { name: "Quick actions", detail: "Use the button above to get started" },
+];
 
 function App() {
   return (
@@ -135,6 +164,21 @@ function App() {
         <Route path="/staff/add" element={<StaffForm />} />
         <Route path="/staff/edit/:id" element={<StaffForm />} />
         <Route path="/staff/:id" element={<StaffDetails />} />
+
+        {modulePages.map(([path, title, description, actionLabel]) => (
+          <Route
+            key={path}
+            path={path}
+            element={(
+              <ModulePage
+                title={title}
+                description={description}
+                actionLabel={actionLabel}
+                items={moduleItems(title)}
+              />
+            )}
+          />
+        ))}
 
       </Route>
 

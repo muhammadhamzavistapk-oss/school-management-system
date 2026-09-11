@@ -1262,59 +1262,10 @@
 // export default StudentForm;
 
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
-
-const STORAGE_KEY = "school_students";
-
-function getStudents() {
-    try {
-        const savedStudents = localStorage.getItem(STORAGE_KEY);
-
-        return savedStudents
-            ? JSON.parse(savedStudents)
-            : [];
-    } catch (error) {
-        console.error("Failed to load students:", error);
-        return [];
-    }
-}
-
-function getStudentById(id) {
-    const students = getStudents();
-
-    return (
-        students.find(
-            (student) => student.id === id
-        ) || null
-    );
-}
-
-function createStudentId(students) {
-    if (students.length === 0) {
-        return "STU-001";
-    }
-
-    const numbers = students
-        .map((student) => {
-            const match =
-                student.id?.match(/STU-(\d+)/);
-
-            return match
-                ? Number(match[1])
-                : 0;
-        })
-        .filter(Boolean);
-
-    const nextNumber =
-        Math.max(...numbers, 0) + 1;
-
-    return `STU-${String(nextNumber).padStart(
-        3,
-        "0"
-    )}`;
-}
+import studentService from "../../services/studentService";
 
 function StudentForm() {
     const navigate = useNavigate();
@@ -1322,37 +1273,37 @@ function StudentForm() {
 
     const isEditMode = Boolean(id);
 
-    const existingStudent = isEditMode
-        ? getStudentById(id)
-        : null;
+    const [existingStudent, setExistingStudent] = useState(null);
+    const [isLoading, setIsLoading] = useState(isEditMode);
 
-    const [formData, setFormData] = useState(() => ({
-        name: existingStudent?.name || "",
-        email: existingStudent?.email || "",
-        phone: existingStudent?.phone || "",
-        className:
-            existingStudent?.className || "",
-        section:
-            existingStudent?.section || "",
-        gender:
-            existingStudent?.gender || "",
-        dateOfBirth:
-            existingStudent?.dateOfBirth || "",
-        address:
-            existingStudent?.address || "",
-        guardianName:
-            existingStudent?.guardianName || "",
-        guardianPhone:
-            existingStudent?.guardianPhone || "",
-        status:
-            existingStudent?.status || "Active",
-    }));
+    const [formData, setFormData] = useState({
+        name: "", email: "", phone: "", className: "", section: "",
+        gender: "", dateOfBirth: "", address: "", guardianName: "",
+        guardianPhone: "", status: "Active",
+    });
 
     const [errors, setErrors] =
         useState({});
 
     const [isSaving, setIsSaving] =
         useState(false);
+
+    useEffect(() => {
+        if (!isEditMode) {
+            return;
+        }
+
+        studentService.getById(id)
+            .then((response) => {
+                const student = response.data?.data || response.data;
+                setExistingStudent(student);
+                setFormData((previous) => ({ ...previous, ...student }));
+            })
+            .catch((error) => {
+                console.error("Failed to load student:", error);
+            })
+            .finally(() => setIsLoading(false));
+    }, [id, isEditMode]);
 
     const handleChange = (event) => {
         const { name, value } =
@@ -1432,7 +1383,7 @@ function StudentForm() {
         );
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!validateForm()) {
@@ -1442,44 +1393,10 @@ function StudentForm() {
         setIsSaving(true);
 
         try {
-            const students = getStudents();
-
             if (isEditMode) {
-                const updatedStudents =
-                    students.map((student) =>
-                        student.id === id
-                            ? {
-                                ...student,
-                                ...formData,
-                            }
-                            : student
-                    );
-
-                localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(
-                        updatedStudents
-                    )
-                );
+                await studentService.update(id, formData);
             } else {
-                const newStudent = {
-                    id: createStudentId(
-                        students
-                    ),
-                    ...formData,
-                };
-
-                const updatedStudents = [
-                    ...students,
-                    newStudent,
-                ];
-
-                localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(
-                        updatedStudents
-                    )
-                );
+                await studentService.create(formData);
             }
 
             navigate("/students");
@@ -1489,18 +1406,19 @@ function StudentForm() {
                 error
             );
 
-            alert(
-                "Something went wrong while saving the student."
-            );
+            const validationErrors = error.response?.data?.errors;
+            const message = validationErrors
+                ? Object.values(validationErrors).flat().join("\n")
+                : error.response?.data?.message ||
+                    "Something went wrong while saving the student.";
+
+            alert(message);
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (
-        isEditMode &&
-        !existingStudent
-    ) {
+    if (isLoading || (isEditMode && !existingStudent)) {
         return (
             <div className="student-page">
                 <div className="student-table-card">

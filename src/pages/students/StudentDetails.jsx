@@ -1224,6 +1224,8 @@
 
 import "./Student.css";
 
+import { useEffect, useState } from "react";
+
 import {
     ArrowLeft,
     Pencil,
@@ -1234,19 +1236,33 @@ import {
     Link,
     useParams,
 } from "react-router-dom";
-
-const STORAGE_KEY = "school_students";
+import studentService from "../../services/studentService";
 
 function StudentDetails() {
     const { id } = useParams();
+    const [student, setStudent] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const students = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "[]"
-    );
+    useEffect(() => {
+        studentService.getById(id)
+            .then((response) => {
+                setStudent(response.data?.data || response.data);
+            })
+            .catch((error) => {
+                console.error("Failed to load student:", error);
+            })
+            .finally(() => setIsLoading(false));
+    }, [id]);
 
-    const student = students.find(
-        (item) => item.id === id
-    );
+    if (isLoading) {
+        return (
+            <div className="student-page">
+                <div className="student-details-not-found">
+                    <h2>Loading Student...</h2>
+                </div>
+            </div>
+        );
+    }
 
     if (!student) {
         return (
