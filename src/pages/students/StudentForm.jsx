@@ -1262,19 +1262,22 @@
 // export default StudentForm;
 
 
-import { useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
-import studentService from "../../services/studentService";
+import StudentContext from "../../context/StudentContext";
 
 function StudentForm() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { students, addStudent, updateStudent } =
+        useContext(StudentContext);
 
     const isEditMode = Boolean(id);
 
-    const [existingStudent, setExistingStudent] = useState(null);
-    const [isLoading, setIsLoading] = useState(isEditMode);
+    const existingStudent = isEditMode
+        ? students.find((student) => String(student.id) === String(id))
+        : null;
 
     const [formData, setFormData] = useState({
         name: "", email: "", phone: "", className: "", section: "",
@@ -1287,23 +1290,6 @@ function StudentForm() {
 
     const [isSaving, setIsSaving] =
         useState(false);
-
-    useEffect(() => {
-        if (!isEditMode) {
-            return;
-        }
-
-        studentService.getById(id)
-            .then((response) => {
-                const student = response.data?.data || response.data;
-                setExistingStudent(student);
-                setFormData((previous) => ({ ...previous, ...student }));
-            })
-            .catch((error) => {
-                console.error("Failed to load student:", error);
-            })
-            .finally(() => setIsLoading(false));
-    }, [id, isEditMode]);
 
     const handleChange = (event) => {
         const { name, value } =
@@ -1394,31 +1380,18 @@ function StudentForm() {
 
         try {
             if (isEditMode) {
-                await studentService.update(id, formData);
+                updateStudent({ id, ...formData });
             } else {
-                await studentService.create(formData);
+                addStudent(formData);
             }
 
             navigate("/students");
-        } catch (error) {
-            console.error(
-                "Failed to save student:",
-                error
-            );
-
-            const validationErrors = error.response?.data?.errors;
-            const message = validationErrors
-                ? Object.values(validationErrors).flat().join("\n")
-                : error.response?.data?.message ||
-                    "Something went wrong while saving the student.";
-
-            alert(message);
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (isLoading || (isEditMode && !existingStudent)) {
+    if (isEditMode && !existingStudent) {
         return (
             <div className="student-page">
                 <div className="student-table-card">

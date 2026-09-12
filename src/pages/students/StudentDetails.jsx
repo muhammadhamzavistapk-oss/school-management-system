@@ -1224,7 +1224,7 @@
 
 import "./Student.css";
 
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 
 import {
     ArrowLeft,
@@ -1236,33 +1236,14 @@ import {
     Link,
     useParams,
 } from "react-router-dom";
-import studentService from "../../services/studentService";
+import StudentContext from "../../context/StudentContext";
 
 function StudentDetails() {
     const { id } = useParams();
-    const [student, setStudent] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        studentService.getById(id)
-            .then((response) => {
-                setStudent(response.data?.data || response.data);
-            })
-            .catch((error) => {
-                console.error("Failed to load student:", error);
-            })
-            .finally(() => setIsLoading(false));
-    }, [id]);
-
-    if (isLoading) {
-        return (
-            <div className="student-page">
-                <div className="student-details-not-found">
-                    <h2>Loading Student...</h2>
-                </div>
-            </div>
-        );
-    }
+    const { students } = useContext(StudentContext);
+    const student = students.find(
+        (item) => String(item.id) === String(id)
+    );
 
     if (!student) {
         return (

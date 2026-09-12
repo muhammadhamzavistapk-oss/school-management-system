@@ -1,9 +1,9 @@
 
 import "./Student.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import studentService from "../../services/studentService";
+import StudentContext from "../../context/StudentContext";
 import {
     Plus,
     Search,
@@ -17,9 +17,7 @@ import {
 } from "lucide-react";
 
 function Student() {
-    const [students, setStudents] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [loadError, setLoadError] = useState("");
+    const { students, deleteStudent } = useContext(StudentContext);
 
     const [search, setSearch] = useState("");
 
@@ -28,22 +26,6 @@ function Student() {
 
     const [statusFilter, setStatusFilter] =
         useState("All");
-
-    useEffect(() => {
-        const loadStudents = async () => {
-            try {
-                const response = await studentService.getAll();
-                setStudents(response.data);
-            } catch (error) {
-                console.error("Failed to load students:", error);
-                setLoadError("Unable to load students from the API.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadStudents();
-    }, []);
 
     // -----------------------------------------
     // Delete Student
@@ -66,16 +48,7 @@ function Student() {
             return;
         }
 
-        studentService.delete(id)
-            .then(() => {
-                setStudents((previousStudents) =>
-                    previousStudents.filter((item) => item.id !== id)
-                );
-            })
-            .catch((error) => {
-                console.error("Failed to delete student:", error);
-                alert("Unable to delete student.");
-            });
+        deleteStudent(id);
     };
 
     // -----------------------------------------
@@ -120,14 +93,6 @@ function Student() {
         classFilter,
         statusFilter,
     ]);
-
-    if (isLoading) {
-        return <div className="student-page"><div className="empty-students"><h2>Loading Students...</h2></div></div>;
-    }
-
-    if (loadError) {
-        return <div className="student-page"><div className="empty-students"><h2>{loadError}</h2></div></div>;
-    }
 
     // -----------------------------------------
     // Statistics
